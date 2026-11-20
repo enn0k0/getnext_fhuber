@@ -1,4 +1,4 @@
-#include "get_next_line_0.h"
+#include "get_next_line.h"
 
 char    *read_to_stash(int fd, char *stash, int *endoffile)
 {
@@ -27,26 +27,21 @@ char    *read_to_stash(int fd, char *stash, int *endoffile)
 	return (new_stash);
 }
 
-static char *save_rest(char *stash, int i)
+static void	save_rest(char *stash, int i, char *rest)
 {
-	char    *new_stash;
 	int	 j;
 	int	 a;
 
 	a = 0;
 	j = i + 1;
-	new_stash = malloc(ft_strlen(stash) - i);
-	if (!new_stash)
-		return (free(stash), NULL);
 	while (stash[j])
 	{
-		new_stash[a] = stash[j];
+		rest[a] = stash[j];
 		j++;
 		a++;
 	}
-	new_stash[a] = '\0';
+	rest[a] = '\0';
 	free(stash);
-	return (new_stash);
 }
 
 static char *read_until_newline(int fd, char *stash, int *endoffile)
@@ -67,23 +62,26 @@ char *get_next_line(int fd)
 	int		 i;
 	int		 endoffile;
 	char		*str;
-	static char *stash;
+	char		*stash;
+	static char	rest[BUFFER_SIZE + 1];
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
 	endoffile = 0;
+	stash = ft_strjoin(NULL, rest);
+	rest[0] = '\0';
+	if (!stash)
+		return (NULL);
 	stash = read_until_newline(fd, stash, &endoffile);
 	if (!stash)
 		return (NULL);
 	i = find_newline(stash);
 	str = create_line(stash, i);
 	if (!str)
-		return (free(stash), stash = NULL, NULL);
+		return (free(stash), NULL);
 	if (stash[i] == '\0')
-		return (free(stash), stash = NULL, str);
-	stash = save_rest(stash, i);
-	if (!stash)
-		return (free(str), NULL);
+		return (free(stash), str);
+	save_rest(stash, i, rest);
 	return (str);
 }
 
@@ -97,12 +95,7 @@ int main(void)
 
 	fd = open("test.txt", O_RDONLY);
 	line = get_next_line(fd);
-	while (line)
-	{
-		printf("%s", line);
-		free(line);
-		line = get_next_line(fd);
-	}
+	free(line);
 	close(fd);
 	return (0);
 }
